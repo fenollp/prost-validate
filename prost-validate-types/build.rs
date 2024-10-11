@@ -15,6 +15,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     prost_reflect_build::Builder::new()
         .file_descriptor_set_path(&descriptor_path)
         .descriptor_pool("DESCRIPTOR_POOL")
-        .compile_protos(files, &[DIR])?;
+        .compile_protos(
+            files,
+            &[
+                DIR,
+                "/usr/local/include/google/protobuf",
+                "/usr/local/include/google",
+                "/usr/local/include",
+            ],
+        )?;
     Ok(())
 }
