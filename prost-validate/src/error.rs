@@ -97,6 +97,8 @@ macro_rules! format_err {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
+
     use crate::errors::message;
     use crate::Error;
 
