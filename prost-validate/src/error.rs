@@ -125,6 +125,7 @@ mod tests {
 
     #[cfg(feature = "tonic")]
     #[test]
+    #[expect(clippy::unwrap_used)]
     fn test_status() {
         use tonic_types::StatusExt;
 
