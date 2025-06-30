@@ -22,16 +22,18 @@ impl ToValidationTokens for MapRules {
         let rules = prost_validate_types::MapRules::from(self.to_owned());
         let min_pairs = rules.min_pairs.map(|v| {
             let v = v as usize;
+            let check = if v == 1 { quote! { #name.is_empty() } } else { quote! { #name.len() < #v } };
             quote! {
-                if #name.len() < #v {
+                if #check {
                     return Err(::prost_validate::Error::new(#field, ::prost_validate::errors::map::Error::MinPairs(#v)));
                 }
             }
         });
         let max_pairs = rules.max_pairs.map(|v| {
             let v = v as usize;
+            let check = if v == 1 { quote! { !#name.is_empty() } } else { quote! { #name.len() > #v } };
             quote! {
-                if #name.len() > #v {
+                if #check {
                     return Err(::prost_validate::Error::new(#field, ::prost_validate::errors::map::Error::MaxPairs(#v)));
                 }
             }

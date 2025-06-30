@@ -19,16 +19,18 @@ impl ToValidationTokens for RepeatedRules {
         let field = &ctx.name;
         let min_items = self.min_items.map(|v| {
             let v = v as usize;
+            let check = if v == 1 { quote! { #name.is_empty() } } else { quote! { #name.len() < #v } };
             quote! {
-                if #name.len() < #v {
+                if #check {
                     return Err(::prost_validate::Error::new(#field, ::prost_validate::errors::list::Error::MinItems(#v)));
                 }
             }
         });
         let max_items = self.max_items.map(|v| {
             let v = v as usize;
+            let check = if v == 1 { quote! { !#name.is_empty() } } else { quote! { #name.len() > #v } };
             quote! {
-                if #name.len() > #v {
+                if #check {
                     return Err(::prost_validate::Error::new(#field, ::prost_validate::errors::list::Error::MaxItems(#v)));
                 }
             }
