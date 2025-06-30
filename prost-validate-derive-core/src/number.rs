@@ -6,7 +6,7 @@ use std::ops::Not;
 use syn::{LitFloat, LitInt};
 
 macro_rules! make_number_rules {
-    ($name:ident,$typ:ident,$lit:ident,$module:ident) => {
+    ($name:ident, $typ:ty, $lit:ident, $module:ident, $is_unsigned:literal) => {
         #[derive(Debug, FromMeta, Clone)]
         pub struct $name {
             pub r#const: Option<$typ>,
@@ -23,7 +23,13 @@ macro_rules! make_number_rules {
         impl ToValidationTokens for $name {
             fn to_validation_tokens(&self, ctx: &Context, name: &Ident) -> TokenStream {
                 let field = &ctx.name;
-                let rules = prost_validate_types::$name::from(self.to_owned());
+                let rules = match ($is_unsigned, self.to_owned()) {
+                    (true, rules @ $name { lt:  Some(z), .. }) if z == <$typ>::from(0u8) => $name { lt:  None, ..rules },
+                    (true, rules @ $name { lte: Some(z), .. }) if z == <$typ>::from(0u8) => $name { lte: None, ..rules },
+                    (true, rules @ $name { gte: Some(z), .. }) if z == <$typ>::from(0u8) => $name { gte: None, ..rules },
+                    (_, rules) => rules,
+                };
+                let rules = prost_validate_types::$name::from(rules);
                 let r#const = rules.r#const.map(|v| {
                     quote! {
                         if *#name != #v {
@@ -122,7 +128,7 @@ macro_rules! make_number_rules {
                 let r#in = rules.r#in.is_empty().not().then(|| {
                     let v = rules.r#in.to_owned();
                     quote! {
-                        let values = vec![#(#v),*];
+                        let values = [#(#v),*];
                         if !values.contains(#name) {
                             return Err(::prost_validate::Error::new(#field, ::prost_validate::errors::$module::Error::In(values.to_vec())));
                         }
@@ -131,7 +137,7 @@ macro_rules! make_number_rules {
                 let not_in = rules.not_in.is_empty().not().then(|| {
                     let v = rules.not_in.to_owned();
                     quote! {
-                        let values = vec![#(#v),*];
+                        let values = [#(#v),*];
                         if values.contains(#name) {
                             return Err(::prost_validate::Error::new(#field, ::prost_validate::errors::$module::Error::NotIn(values.to_vec())));
                         }
@@ -184,15 +190,15 @@ macro_rules! make_number_rules {
     };
 }
 
-make_number_rules!(UInt64Rules, u64, LitInt, uint64);
-make_number_rules!(UInt32Rules, u32, LitInt, uint32);
-make_number_rules!(Int64Rules, i64, LitInt, int64);
-make_number_rules!(Int32Rules, i32, LitInt, int32);
-make_number_rules!(DoubleRules, f64, LitFloat, double);
-make_number_rules!(FloatRules, f32, LitFloat, float);
-make_number_rules!(SInt32Rules, i32, LitInt, sint32);
-make_number_rules!(SInt64Rules, i64, LitInt, sint64);
-make_number_rules!(Fixed32Rules, u32, LitInt, fixed32);
-make_number_rules!(Fixed64Rules, u64, LitInt, fixed64);
-make_number_rules!(SFixed32Rules, i32, LitInt, sfixed32);
-make_number_rules!(SFixed64Rules, i64, LitInt, sfixed64);
+make_number_rules!(UInt64Rules, u64, LitInt, uint64, true);
+make_number_rules!(UInt32Rules, u32, LitInt, uint32, true);
+make_number_rules!(Int64Rules, i64, LitInt, int64, false);
+make_number_rules!(Int32Rules, i32, LitInt, int32, false);
+make_number_rules!(DoubleRules, f64, LitFloat, double, false);
+make_number_rules!(FloatRules, f32, LitFloat, float, false);
+make_number_rules!(SInt32Rules, i32, LitInt, sint32, false);
+make_number_rules!(SInt64Rules, i64, LitInt, sint64, false);
+make_number_rules!(Fixed32Rules, u32, LitInt, fixed32, true);
+make_number_rules!(Fixed64Rules, u64, LitInt, fixed64, true);
+make_number_rules!(SFixed32Rules, i32, LitInt, sfixed32, false);
+make_number_rules!(SFixed64Rules, i64, LitInt, sfixed64, false);

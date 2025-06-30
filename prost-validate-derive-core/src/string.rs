@@ -46,7 +46,7 @@ impl ToValidationTokens for StringRules {
                 }
             }
         });
-        let min_len = rules.min_len.map(|v| {
+        let min_len = rules.min_len.filter(|&v| v != 0).map(|v| {
             let v = v as usize;
             quote! {
                 if #name.chars().count() < #v {

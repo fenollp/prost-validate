@@ -6,7 +6,7 @@ static DIR: &str = "proto/validate";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let files = &["validate.proto"];
     files.iter().for_each(|f| {
-        println!("cargo:rerun-if-changed={}/{}", DIR, f);
+        println!("cargo:rerun-if-changed={DIR}/{f}");
     });
 
     #[allow(clippy::unwrap_used)]
